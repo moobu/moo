@@ -34,6 +34,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		runtime.Args(options.Args...),
 		runtime.Env(options.Env...),
 		runtime.Replicas(options.Replicas),
+		runtime.Retries(options.Retries),
 		runtime.Bundle(options.Bundle),
 		runtime.GPU(options.GPU),
 		runtime.CreateNamespace(options.Namespace),

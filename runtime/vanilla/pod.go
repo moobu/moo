@@ -3,6 +3,7 @@ package vanilla
 import (
 	"io"
 	"sync"
+	"time"
 
 	"github.com/moobu/moo/runtime"
 )
@@ -51,7 +52,7 @@ func (p *vpod) start() (err error) {
 		return
 	}
 
-	p.Status(runtime.Running, nil)
+	p.Status(runtime.Running, time.Now(), nil)
 	p.running = true
 	p.wg.Add(1)
 
@@ -70,7 +71,7 @@ func (p *vpod) stream() {
 func (p *vpod) wait() {
 	err := p.client.Wait(p.process)
 	p.Lock()
-	p.Status(runtime.Exited, err)
+	p.Status(runtime.Exited, time.Now(), err)
 	p.started++
 	p.running = false
 	p.wg.Done()
@@ -78,6 +79,6 @@ func (p *vpod) wait() {
 }
 
 func (p *vpod) stop() error {
-	p.Status(runtime.Stopping, nil)
+	p.Status(runtime.Stopping, time.Now(), nil)
 	return p.client.Kill(p.process)
 }

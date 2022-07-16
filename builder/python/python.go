@@ -21,7 +21,7 @@ func (p *python) Build(s *builder.Source, opts ...builder.BuildOption) (*builder
 	// we first create a new conda environment for the source
 	env := fmt.Sprintf("%s-%s", options.Namespace, s.Name)
 	cmd := exec.Command("conda", "create", "-y", "-n", env)
-	// use a session logger to write the output to
+	// TODO: use a session logger to write the output to
 	cmd.Stdout = os.Stdout
 	cmd.Dir = options.Dir
 	if err := cmd.Run(); err != nil {
@@ -33,7 +33,7 @@ func (p *python) Build(s *builder.Source, opts ...builder.BuildOption) (*builder
 	}
 	// then we install the dependencies to the newly created environment
 	cmd = exec.Command("conda", "install", "-r", requires, "-y")
-	// use a session logger to write the output to
+	// TODO: use a session logger to write the output to
 	cmd.Stdout = os.Stdout
 	cmd.Dir = options.Dir
 	if err := cmd.Run(); err != nil {

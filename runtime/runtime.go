@@ -45,7 +45,7 @@ func Parse(rawPod string) (*Pod, error) {
 	return pod, nil
 }
 
-func (p *Pod) Status(status Status, err error) {
+func (p *Pod) Status(status Status, updated time.Time, err error) {
 	if p.Metadata == nil {
 		p.Metadata = make(map[string]string)
 	}
@@ -53,7 +53,7 @@ func (p *Pod) Status(status Status, err error) {
 		p.Metadata["error"] = err.Error()
 	}
 	p.Metadata["status"] = status.String()
-	p.Metadata["updated"] = time.Now().Format(time.RFC3339)
+	p.Metadata["updated"] = updated.Format(time.RFC3339)
 }
 
 func (p Pod) Get(key string) string {
@@ -91,9 +91,10 @@ type Scheduler interface {
 }
 
 type Event struct {
-	Type EventType
-	Time time.Time
-	Pod  *Pod
+	Type      EventType
+	Time      time.Time
+	Pod       *Pod
+	Namespace string
 }
 
 type EventType int8

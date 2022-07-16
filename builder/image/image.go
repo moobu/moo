@@ -4,6 +4,7 @@ import (
 	"github.com/moobu/moo/builder"
 )
 
+// Client is an interface for managing images.
 type Client interface {
 	Build(string, ...BuildOption) (*Image, error)
 	Remove(string, RemoveOption) error

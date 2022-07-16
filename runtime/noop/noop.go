@@ -35,7 +35,7 @@ func (n *noop) Create(pod *runtime.Pod, opts ...runtime.CreateOption) error {
 		return errors.New("pod already created")
 	}
 
-	pod.Status(runtime.Running, nil)
+	pod.Status(runtime.Running, time.Now(), nil)
 	pod.Metadata["started"] = time.Now().Format(time.RFC3339)
 	pod.Metadata["source"] = options.Bundle.Source.URL
 	n.pods[ns][key] = pod

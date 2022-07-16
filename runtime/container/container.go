@@ -8,6 +8,7 @@ import (
 	"github.com/moobu/moo/runtime"
 )
 
+// Client is an interface for managing containers.
 type Client interface {
 	Create(string, ...CreateOption) (*Container, error)
 	Inspect(string, ...InspectOption) (*Container, error)
@@ -41,9 +42,9 @@ func (c *container) Create(pod *runtime.Pod, opts ...runtime.CreateOption) error
 		o(&options)
 	}
 
+	// let's first see if we already have this pod running
 	id := pod.String()
 	ns := options.Namespace
-
 	if _, ok := c.pods[ns]; !ok {
 		c.pods[ns] = make(map[string]*cpod)
 	}
@@ -51,23 +52,25 @@ func (c *container) Create(pod *runtime.Pod, opts ...runtime.CreateOption) error
 		return runtime.ErrExists
 	}
 
+	// if not, we call our container runtime to create a container.
 	ctx := options.Context
 	con, err := c.client.Create(options.Bundle.Image, CreateContext(ctx))
 	if err != nil {
 		return err
 	}
 
+	// then create a pod wrapping this container and get the runtime
+	// start the container.
 	p := &cpod{
 		Pod:       pod,
 		wg:        &c.wg,
-		client:    c.client,
 		container: con,
 		retries:   options.Retries,
 	}
-	if err := p.start(ctx); err != nil {
+	if err := p.start(ctx, c.client, false); err != nil {
 		return err
 	}
-
+	// finally we save the pod in our memory.
 	c.pods[ns][id] = p
 	return nil
 }
@@ -81,30 +84,36 @@ func (c *container) Delete(pod *runtime.Pod, opts ...runtime.DeleteOption) error
 		o(&options)
 	}
 
+	// let's first see if we have a pod wrapping the container.
 	id := pod.String()
 	ns := options.Namespace
 	if _, ok := c.pods[ns]; !ok {
 		return nil
 	}
-
 	p, ok := c.pods[ns][id]
 	if !ok {
 		return runtime.ErrNotFound
 	}
 
+	// then we have to see if the container really exists.
 	ctx := options.Context
 	con, err := c.client.Inspect(p.container.ID, InspectContext(ctx))
 	if err != nil {
 		return err
 	}
-
+	// we delete the container directly if it exited already.
 	if con.Status == runtime.Exited {
-		return nil
+		return c.client.Delete(con.ID, DeleteContext(ctx))
 	}
-
-	if err := p.stop(ctx); err != nil {
+	// otherwise we stop it before deleting it.
+	if err := p.stop(ctx, c.client); err != nil {
 		return err
 	}
+	// then we call our container runtime to remove this container
+	if err := c.client.Delete(con.ID, DeleteContext(ctx)); err != nil {
+		return err
+	}
+	// finally we remove the pod from our memory.
 	delete(c.pods[ns], id)
 	return nil
 }
@@ -145,6 +154,7 @@ func (c *container) Start() (err error) {
 	c.Lock()
 	defer c.Unlock()
 
+	// call the scheduler if we have one.
 	var events <-chan runtime.Event
 	if c.options.Scheduler != nil {
 		if events, err = c.options.Scheduler.Schedule(); err != nil {
@@ -152,11 +162,12 @@ func (c *container) Start() (err error) {
 		}
 	}
 
-	go c.run(events) // start the runtime daemon
+	// start the runtime daemon.
+	go c.run(events)
 	return
 }
 
-func (c *container) run(ev <-chan runtime.Event) {
+func (c *container) run(events <-chan runtime.Event) {
 	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
 
@@ -167,13 +178,46 @@ func (c *container) run(ev <-chan runtime.Event) {
 		case <-t.C:
 			for _, pods := range c.pods {
 				for _, pod := range pods {
-					pod.restartIfDead(context.TODO())
+					if err := pod.restartIfDead(context.TODO(), c.client); err != nil {
+						// log error
+					}
 				}
 			}
-		case _ = <-ev:
-			// TODO: handle events
+		case ev := <-events:
+			// filter out orphaned or outdated events
+			c.RLock()
+			ns := ev.Namespace
+			id := ev.Pod.String()
+			pods, ok := c.pods[ns]
+			if !ok {
+				continue
+			}
+			pod, ok := pods[id]
+			if !ok {
+				continue
+			}
+			if ev.Time.Before(pod.updated) {
+				continue
+			}
+			c.RUnlock()
+
+			// handle the event
+			if err := c.handle(&ev, pod); err != nil {
+				// TODO: log error
+			}
 		}
 	}
+}
+
+func (c *container) handle(ev *runtime.Event, pod *cpod) error {
+	ctx := context.TODO()
+	switch ev.Type {
+	case runtime.EventStart:
+		return pod.start(ctx, c.client, true) // force start
+	case runtime.EventStop:
+		return pod.stop(ctx, c.client)
+	}
+	return nil
 }
 
 func (c *container) Stop() error {
@@ -190,7 +234,7 @@ func (c *container) Stop() error {
 		for _, pod := range pods {
 			// should we trace the error? but we are shutting down
 			// the runtime, that's to say, the entire system is dying.
-			pod.stop(context.TODO())
+			pod.stop(context.TODO(), c.client)
 		}
 	}
 	c.wg.Wait()
@@ -216,44 +260,54 @@ type cpod struct {
 	started int
 	retries int
 	running bool
+	updated time.Time
 
-	client    Client
 	container *Container
 	wg        *sync.WaitGroup
 }
 
-func (p *cpod) start(c context.Context) (err error) {
+func (p *cpod) start(ctx context.Context, c Client, force bool) (err error) {
 	p.Lock()
 	defer p.Unlock()
 
-	if !p.retry() {
+	if !force && !p.retry() {
 		return
 	}
-	if err = p.client.Start(p.container, StartContext(c)); err != nil {
+	if err = c.Start(p.container, StartContext(ctx)); err != nil {
 		return
 	}
 	p.running = true
-	p.Status(runtime.Running, nil)
+	p.update(runtime.Running, nil)
 	p.Metadata["container_id"] = p.container.ID
 	p.wg.Add(1)
 
-	go p.wait(c)
+	go p.wait(ctx, c)
 	return nil
 }
 
-func (p *cpod) wait(c context.Context) {
-	err := p.client.Wait(p.container, WaitContext(c))
+func (p *cpod) update(status runtime.Status, err error) {
+	now := time.Now()
+	p.updated = now
+	p.Status(status, now, err)
+}
+
+func (p *cpod) wait(ctx context.Context, c Client) {
+	err := c.Wait(p.container, WaitContext(ctx))
+
 	p.Lock()
-	p.Status(runtime.Exited, err)
+	p.update(runtime.Exited, err)
 	p.running = false
 	p.started++
 	p.Unlock()
 	p.wg.Done()
 }
 
-func (p *cpod) stop(c context.Context) error {
-	p.Status(runtime.Stopping, nil)
-	return p.client.Stop(p.container, StopContext(c))
+func (p *cpod) stop(ctx context.Context, c Client) error {
+	p.Lock()
+	defer p.Unlock()
+
+	p.update(runtime.Stopping, nil)
+	return c.Stop(p.container, StopContext(ctx))
 }
 
 func (p *cpod) retry() bool {
@@ -263,12 +317,12 @@ func (p *cpod) retry() bool {
 	return p.retries == -1 || p.started <= p.retries
 }
 
-func (p *cpod) restartIfDead(c context.Context) error {
+func (p *cpod) restartIfDead(ctx context.Context, c Client) error {
 	p.RLock()
 	if !p.retry() {
 		p.RUnlock()
 		return nil
 	}
 	p.RUnlock()
-	return p.start(c)
+	return p.start(ctx, c, false)
 }

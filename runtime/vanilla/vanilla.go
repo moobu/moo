@@ -181,14 +181,14 @@ func (v *vanilla) Stop() error {
 	return nil
 }
 
-func New(driver Client, opts ...runtime.Option) runtime.Runtime {
+func New(c Client, opts ...runtime.Option) runtime.Runtime {
 	var options runtime.Options
 	for _, o := range opts {
 		o(&options)
 	}
 	return &vanilla{
 		options: options,
-		client:  driver,
+		client:  c,
 		pods:    make(map[string]map[string]*vpod),
 		exit:    make(chan struct{}),
 	}

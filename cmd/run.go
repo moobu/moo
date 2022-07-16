@@ -44,13 +44,17 @@ func init() {
 				Usage: "specify replicas to be deployed",
 				Value: 1,
 			},
+			&cli.IntFlag{
+				Name:  "retries",
+				Usage: "specify maximum retries for the deploy",
+			},
 			&cli.BoolFlag{
 				Name:  "gpu",
-				Usage: "enable GPU support for the pod",
+				Usage: "enable GPU support for the deploy",
 			},
 			&cli.BoolFlag{
 				Name:  "output",
-				Usage: "enable the client side stdard output",
+				Usage: "enable the client side standard output",
 				Value: true,
 			},
 			&cli.StringSliceFlag{
@@ -126,6 +130,7 @@ func Run(c cli.Ctx) error {
 		runtime.CreateNamespace(ns),
 		runtime.Env(c.StringSlice("env")...),
 		runtime.Replicas(c.Int("replicas")),
+		runtime.Retries(c.Int("retries")),
 		runtime.GPU(c.Bool("gpu")),
 		runtime.Output(output),
 		runtime.Bundle(bundle),
