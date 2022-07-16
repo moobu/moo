@@ -54,7 +54,7 @@ func List(c cli.Ctx) error {
 	pods, err := cli.List(
 		runtime.Name(c.String("name")),
 		runtime.Tag(c.String("tag")),
-		runtime.ListWithNamespace(c.String("ns")))
+		runtime.ListNamespace(c.String("ns")))
 	if err != nil {
 		return err
 	}
@@ -68,24 +68,14 @@ func List(c cli.Ctx) error {
 	tw := tabwriter.NewWriter(os.Stdout, 0, 8, 1, '\t', tabwriter.AlignRight)
 	fmt.Fprint(tw, "NAME\tTAG\tSTATUS\tUPTIME\tSOURCE\n")
 
-	na := "N/A"
 	for _, pod := range pods {
-		status := na
-		source := na
-		uptime := na
-		meta := pod.Metadata
+		updated := pod.Get("updated")
+		status := pod.Get("status")
+		source := pod.Get("source")
+		uptime := updated
 
-		if v, ok := meta["status"]; ok {
-			status = v
-		}
-		if v, ok := meta["source"]; ok {
-			source = v
-		}
-
-		if v, ok := meta["started"]; ok {
-			if started, err := time.Parse(time.RFC3339, v); err == nil {
-				uptime = time.Since(started).Round(time.Second).String()
-			}
+		if started, err := time.Parse(time.RFC3339, updated); err == nil {
+			uptime = time.Since(started).Round(time.Second).String()
 		}
 
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", pod.Name, pod.Tag, status, uptime, source)

@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/moobu/moo/runtime/local/driver"
+	"github.com/moobu/moo/runtime/vanilla"
 )
 
 type proc struct {
@@ -20,7 +20,7 @@ type noop struct {
 	nextpid int32
 }
 
-func (n *noop) Fork(r *driver.Runnable) (*driver.Process, error) {
+func (n *noop) Fork(r *vanilla.Runnable) (*vanilla.Process, error) {
 	n.Lock()
 	defer n.Unlock()
 	n.nextpid++
@@ -29,15 +29,15 @@ func (n *noop) Fork(r *driver.Runnable) (*driver.Process, error) {
 		id:   pid,
 		exit: make(chan struct{}),
 	}
-	return &driver.Process{
-		ID:  int(pid),
-		In:  io.Discard,
-		Out: new(bytes.Buffer),
-		Err: new(bytes.Buffer),
+	return &vanilla.Process{
+		ID:     int(pid),
+		Input:  io.Discard,
+		Output: new(bytes.Buffer),
+		Error:  new(bytes.Buffer),
 	}, nil
 }
 
-func (n *noop) Kill(p *driver.Process) error {
+func (n *noop) Kill(p *vanilla.Process) error {
 	n.Lock()
 	defer n.Unlock()
 
@@ -50,7 +50,7 @@ func (n *noop) Kill(p *driver.Process) error {
 	return nil
 }
 
-func (n *noop) Wait(p *driver.Process) error {
+func (n *noop) Wait(p *vanilla.Process) error {
 	n.Lock()
 	proc, ok := n.procs[int32(p.ID)]
 	if !ok {
@@ -62,6 +62,6 @@ func (n *noop) Wait(p *driver.Process) error {
 	return nil
 }
 
-func New() driver.Driver {
+func New() vanilla.Client {
 	return &noop{}
 }

@@ -123,7 +123,7 @@ func Run(c cli.Ctx) error {
 	}
 	// build the optional functions used by the Moo runtime.
 	opts := []runtime.CreateOption{
-		runtime.CreateWithNamespace(ns),
+		runtime.CreateNamespace(ns),
 		runtime.Env(c.StringSlice("env")...),
 		runtime.Replicas(c.Int("replicas")),
 		runtime.GPU(c.Bool("gpu")),
@@ -152,5 +152,5 @@ func build(c cli.Ctx, cli client.Client, s *builder.Source, ns string) (*builder
 	// the runtime to run the returned bundle.
 	return cli.Build(s,
 		builder.Ref(c.String("ref")),
-		builder.BuildWithNamespace(ns))
+		builder.BuildNamespace(ns))
 }

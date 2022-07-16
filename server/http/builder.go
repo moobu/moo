@@ -33,7 +33,7 @@ func Build(w http.ResponseWriter, r *http.Request) {
 
 	opts := args.Options
 	bundle, err := builder.Build(args.Source,
-		builder.BuildWithNamespace(opts.Namespace),
+		builder.BuildNamespace(opts.Namespace),
 		builder.Dir(opts.Dir),
 		builder.Ref(opts.Ref))
 
@@ -56,7 +56,7 @@ func Clean(w http.ResponseWriter, r *http.Request) {
 
 	opts := args.Options
 	err := builder.Clean(args.Bundle,
-		builder.CleanWithNamespace(opts.Namespace))
+		builder.CleanNamespace(opts.Namespace))
 
 	writeJSON(w, nil, err)
 }

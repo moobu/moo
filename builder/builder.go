@@ -18,7 +18,7 @@ type Source struct {
 	Name string
 	// Type specifies which builder to use
 	Type string
-	// URL address of the source
+	// URL of the source
 	URL string
 }
 
@@ -27,9 +27,11 @@ type Bundle struct {
 	Dir string
 	// Reference on which the bundle was built
 	Ref string
-	// Entry command and arguments
+	// Image is the image ID
+	Image string
+	// Entry defines an initial command
 	Entry []string
-	// Source built
+	// Source refers to the original source
 	Source *Source
 }
 

@@ -56,10 +56,10 @@ The Moo Client is just an encapsulation of some HTTP calls to the Moo server tha
 
 ### Preset
 
-Preset is not shown in the architecture graph but it's important. It is a design pattern learned from [micro](https://github.com/micro/micro), the microservice platform of the future, to initialize the components we have talked about when starting up the Moo engine. By now, we have three preset defined as follows.
+Preset is not shown in the architecture graph but it's important. It is a design pattern learned from [micro](https://github.com/micro/micro), the microservice platform of the future, to initialize the components we have talked about, when starting up the Moo engine. By now, we have three presets defined as follows.
 
 - **local** for running Moo in your own local machine
-- **kubernetes** for running Moo in a k8s/k3s cluster
+- **cluster** for running Moo in a Kubernetes cluster
 - **test** for testing purposes with some pseudo implementations
 
 Each of which can be used in the relevant scenarios.

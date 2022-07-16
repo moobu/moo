@@ -38,7 +38,7 @@ func Kill(c cli.Ctx) error {
 	if err != nil {
 		return err
 	}
-	err = cli.Delete(pod, runtime.DeleteWithNamespace(c.String("ns")))
+	err = cli.Delete(pod, runtime.DeleteNamespace(c.String("ns")))
 	if err != nil {
 		return err
 	}

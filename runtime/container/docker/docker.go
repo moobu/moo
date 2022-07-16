@@ -1,3 +1,3 @@
-package rules
+package docker
 
 // TODO: implement

@@ -36,7 +36,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		runtime.Replicas(options.Replicas),
 		runtime.Bundle(options.Bundle),
 		runtime.GPU(options.GPU),
-		runtime.CreateWithNamespace(options.Namespace),
+		runtime.CreateNamespace(options.Namespace),
 	}
 	writeJSON(w, nil, runtime.Create(args.Pod, opts...))
 }
@@ -61,7 +61,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	options := args.Options
-	err := runtime.Delete(args.Pod, runtime.DeleteWithNamespace(options.Namespace))
+	err := runtime.Delete(args.Pod, runtime.DeleteNamespace(options.Namespace))
 	writeJSON(w, nil, err)
 }
 
@@ -82,7 +82,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 	opts := []runtime.ListOption{
 		runtime.Name(options.Name),
 		runtime.Tag(options.Tag),
-		runtime.ListWithNamespace(options.Namespace),
+		runtime.ListNamespace(options.Namespace),
 	}
 	pods, err := runtime.List(opts...)
 	writeJSON(w, pods, err)

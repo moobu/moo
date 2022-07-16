@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/moobu/moo/builder"
-	"github.com/moobu/moo/runtime/local/driver"
+	"github.com/moobu/moo/runtime/vanilla"
 )
 
 func TestWait(t *testing.T) {
 	d := New()
-	r := driver.Runnable{
+	r := vanilla.Runnable{
 		Bundle: &builder.Bundle{
 			Entry: []string{"sleep"},
 		},
@@ -27,7 +27,7 @@ func TestWait(t *testing.T) {
 
 func TestKill(t *testing.T) {
 	d := New()
-	r := driver.Runnable{
+	r := vanilla.Runnable{
 		Bundle: &builder.Bundle{
 			Entry: []string{"sleep"},
 		},

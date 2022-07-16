@@ -6,12 +6,12 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/moobu/moo/runtime/local/driver"
+	"github.com/moobu/moo/runtime/vanilla"
 )
 
 type raw struct{}
 
-func (raw) Fork(r *driver.Runnable) (*driver.Process, error) {
+func (raw) Fork(r *vanilla.Runnable) (*vanilla.Process, error) {
 	var dir string
 	if r.Bundle.Source != nil {
 		dir = r.Bundle.Dir
@@ -36,19 +36,19 @@ func (raw) Fork(r *driver.Runnable) (*driver.Process, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
-	return &driver.Process{
-		ID:  cmd.Process.Pid,
-		Out: pout,
-		Err: perr,
-		In:  pin,
+	return &vanilla.Process{
+		ID:     cmd.Process.Pid,
+		Output: pout,
+		Error:  perr,
+		Input:  pin,
 	}, nil
 }
 
-func (raw) Kill(p *driver.Process) error {
+func (raw) Kill(p *vanilla.Process) error {
 	return syscall.Kill(-p.ID, syscall.SIGTERM)
 }
 
-func (raw) Wait(p *driver.Process) error {
+func (raw) Wait(p *vanilla.Process) error {
 	proc, err := os.FindProcess(p.ID)
 	if err != nil {
 		return err
@@ -63,6 +63,6 @@ func (raw) Wait(p *driver.Process) error {
 	return errors.New(ps.String())
 }
 
-func New() driver.Driver {
+func New() vanilla.Client {
 	return raw{}
 }

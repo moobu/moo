@@ -85,7 +85,7 @@ func Server(c cli.Ctx) error {
 			},
 		}
 		err := runtime.Default.Create(&runtime.Pod{Name: "gateway", Tag: "latest"},
-			runtime.CreateWithNamespace("default"),
+			runtime.CreateNamespace("default"),
 			runtime.Bundle(bundle),
 			runtime.Args("gateway", "--server", addr, "--port", strconv.Itoa(c.Int("gateway-port"))),
 			runtime.Output(os.Stdout))

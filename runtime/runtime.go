@@ -1,8 +1,15 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+	"time"
+)
+
+var (
+	ErrExists   = errors.New("pod already exists")
+	ErrNotFound = errors.New("no such pod")
 )
 
 type Runtime interface {
@@ -12,9 +19,9 @@ type Runtime interface {
 	Delete(*Pod, ...DeleteOption) error
 	// List lists pods
 	List(...ListOption) ([]*Pod, error)
-	// Start/Stop starts/stops the runtime daemon,
-	// and is used only by the local runtime
+	// Start starts the runtime
 	Start() error
+	// Start stops the runtime
 	Stop() error
 }
 
@@ -46,6 +53,17 @@ func (p *Pod) Status(status Status, err error) {
 		p.Metadata["error"] = err.Error()
 	}
 	p.Metadata["status"] = status.String()
+	p.Metadata["updated"] = time.Now().Format(time.RFC3339)
+}
+
+func (p Pod) Get(key string) string {
+	if p.Metadata == nil {
+		return "N/A"
+	}
+	if v, ok := p.Metadata[key]; ok {
+		return v
+	}
+	return "N/A"
 }
 
 type Status int8
@@ -67,6 +85,24 @@ var StatusText = [...]string{
 	"stopping",
 	"exited",
 }
+
+type Scheduler interface {
+	Schedule() (<-chan Event, error)
+}
+
+type Event struct {
+	Type EventType
+	Time time.Time
+	Pod  *Pod
+}
+
+type EventType int8
+
+const (
+	EventUpdate EventType = iota + 1
+	EventStart
+	EventStop
+)
 
 var Default Runtime
 
