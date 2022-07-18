@@ -21,6 +21,7 @@ type Client interface {
 
 type Container struct {
 	ID     string
+	Image  string
 	Status runtime.Status
 }
 
@@ -54,7 +55,7 @@ func (c *container) Create(pod *runtime.Pod, opts ...runtime.CreateOption) error
 
 	// if not, we call our container runtime to create a container.
 	ctx := options.Context
-	con, err := c.client.Create(options.Bundle.Image, CreateContext(ctx))
+	con, err := c.client.Create(options.Bundle.Image, CreateContext(ctx), Name(id))
 	if err != nil {
 		return err
 	}
@@ -143,7 +144,7 @@ func (c *container) List(opts ...runtime.ListOption) ([]*runtime.Pod, error) {
 	// 	}
 	// }
 
-	pods := make([]*runtime.Pod, len(ps))
+	pods := make([]*runtime.Pod, 0, len(ps))
 	for _, p := range ps {
 		pods = append(pods, p.Pod)
 	}

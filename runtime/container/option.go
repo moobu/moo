@@ -2,6 +2,18 @@ package container
 
 import "context"
 
+type Options struct {
+	Addr string
+}
+
+type Option func(*Options)
+
+func Addr(addr string) Option {
+	return func(o *Options) {
+		o.Addr = addr
+	}
+}
+
 type CreateOptions struct {
 	Context context.Context
 	Name    string
@@ -23,6 +35,7 @@ func Name(name string) CreateOption {
 
 type DeleteOptions struct {
 	Context context.Context
+	Force   bool
 }
 
 type DeleteOption func(*DeleteOptions)
@@ -30,6 +43,12 @@ type DeleteOption func(*DeleteOptions)
 func DeleteContext(c context.Context) DeleteOption {
 	return func(o *DeleteOptions) {
 		o.Context = c
+	}
+}
+
+func Force() DeleteOption {
+	return func(o *DeleteOptions) {
+		o.Force = true
 	}
 }
 

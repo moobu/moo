@@ -1,4 +1,4 @@
-package podman
+package image
 
 import (
 	"github.com/moobu/moo/builder"
@@ -7,7 +7,7 @@ import (
 // Client is an interface for managing images.
 type Client interface {
 	Build(string, ...BuildOption) (*Image, error)
-	Remove(string, RemoveOption) error
+	Remove(string, ...RemoveOption) error
 }
 
 type Image struct {
