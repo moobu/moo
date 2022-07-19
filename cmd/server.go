@@ -44,6 +44,10 @@ func init() {
 				Usage: "specify a port for the gateway",
 				Value: defaultGatewayPort,
 			},
+			&cli.StringFlag{
+				Name:  "gateway-domain",
+				Usage: "specify a domain pointing to the gateway",
+			},
 			&cli.BoolFlag{
 				Name:  "secure",
 				Usage: "enable TLS",

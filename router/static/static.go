@@ -16,8 +16,8 @@ func (s *static) Register(r *router.Route) error {
 	s.Lock()
 	defer s.Unlock()
 
-	pod := r.Pod
-	if _, ok := s.routes[r.Pod]; !ok {
+	pod := r.Path
+	if _, ok := s.routes[r.Path]; !ok {
 		s.routes[pod] = make(map[uint32]*router.Route)
 	}
 	sum := r.Sum()
@@ -32,7 +32,7 @@ func (s *static) Deregister(r *router.Route) error {
 	s.Lock()
 	defer s.Unlock()
 
-	pod := r.Pod
+	pod := r.Path
 	if _, ok := s.routes[pod]; !ok {
 		return nil
 	}

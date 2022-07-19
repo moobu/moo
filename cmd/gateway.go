@@ -5,12 +5,13 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/moobu/moo/client"
 	"github.com/moobu/moo/client/http"
 	"github.com/moobu/moo/gateway"
-	proxy "github.com/moobu/moo/gateway/http"
+	httpProxy "github.com/moobu/moo/gateway/http"
 	"github.com/moobu/moo/internal/cli"
 	"github.com/moobu/moo/router"
 )
@@ -21,6 +22,10 @@ func init() {
 		About: "run the API gateway",
 		Run:   Gateway,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "domain",
+				Usage: "specify a domain pointing to the gateway",
+			},
 			&cli.StringFlag{
 				Name:  "server",
 				Usage: "specify the address of Moo server",
@@ -42,6 +47,11 @@ func init() {
 			&cli.StringFlag{
 				Name:  "key",
 				Usage: "specify the path to the TLS public key",
+			},
+			&cli.StringFlag{
+				Name:  "protocols",
+				Usage: "specify protocols, separated by commas",
+				Value: "http",
 			},
 		},
 	})
@@ -67,10 +77,18 @@ func Gateway(c cli.Ctx) error {
 	// use the client as the router
 	server := c.String("server")
 	client := http.New(client.Server(server))
-	gw.Handle(proxy.New(gateway.Router(client)))
+
+	protos := strings.Split(c.String("protocols"), ",")
+	for _, proto := range protos {
+		switch proto {
+		case "http":
+			gw.Handle(httpProxy.New(gateway.Router(client)))
+
+		}
+	}
 
 	// register the gateway itself
-	route := &router.Route{Pod: "/moo/gateway", Address: addr, Protocol: "http"}
+	route := &router.Route{Path: "/gateway", Address: addr, Protocol: "http"}
 	if err := client.Register(route); err != nil {
 		return err
 	}

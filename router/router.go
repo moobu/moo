@@ -20,14 +20,14 @@ type Router interface {
 }
 
 type Route struct {
-	Pod      string // pod path (fmt. /:namespace/:name/:tag)
+	Path     string // pod path (fmt. /:namespace/:name/:tag)
 	Protocol string // the protocol by which we communicate with the pod
 	Address  string // pod address (e.g. 10.0.0.1:80, /tmp/moo/xxx.sock)
 }
 
 func (r Route) Sum() uint32 {
 	h := fnv.New32()
-	h.Write([]byte(r.Pod + r.Protocol + r.Address))
+	h.Write([]byte(r.Path + r.Protocol + r.Address))
 	return h.Sum32()
 }
 

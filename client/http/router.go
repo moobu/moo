@@ -37,7 +37,7 @@ func (h *http) Deregister(route *router.Route) error {
 }
 
 func (h *http) Lookup(pod string) ([]*router.Route, error) {
-	route := router.Route{Pod: pod}
+	route := router.Route{Path: pod}
 	url := fmt.Sprintf("http://%s/lookup", h.options.Server)
 
 	reader := buffer.Get()
